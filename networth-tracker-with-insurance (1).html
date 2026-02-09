@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Net Worth Tracker - By Shamsudeen EP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            padding: 2.5rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.3;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            background: #f8fafc;
+        }
+
+        .card {
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: white;
+        }
+
+        .card-assets {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .card-liabilities {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .card-networth {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .card-networth.negative {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-header span {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .action-buttons {
+            padding: 0 2rem 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            background: #f8fafc;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-excel {
+            background: #10b981;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-pdf {
+            background: #ef4444;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-import {
+            background: #6366f1;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-add {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-add-asset {
+            background: #10b981;
+        }
+
+        .btn-add-asset:hover {
+            background: #059669;
+        }
+
+        .btn-add-liability {
+            background: #ef4444;
+        }
+
+        .btn-add-liability:hover {
+            background: #dc2626;
+        }
+
+        .section {
+            padding: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .items-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 200px 1fr 200px 50px;
+            gap: 1rem;
+            padding: 1rem;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-row select,
+        .item-row input[type="text"],
+        .item-row input[type="number"] {
+            padding: 0.7rem;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.95rem;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        .item-row input[type="text"]:focus,
+        .item-row input[type="number"]:focus,
+        .item-row select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .category-info {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #1e40af;
+        }
+
+        .category-info strong {
+            color: #1e3a8a;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .info-item {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #e0e7ff;
+        }
+
+        .info-item-title {
+            font-weight: 600;
+            color: #4f46e5;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-item-desc {
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        .item-row select {
+            background: white;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.7rem;
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+
+        .footer {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .item-row {
+                grid-template-columns: 1fr;
+            }
+
+            .card-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>Net Worth Tracker</h1>
+                <p>Track your financial health with precision</p>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="card card-assets">
+                <div class="card-header">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                        <polyline points="17 6 23 6 23 12"></polyline>
+                    </svg>
+                    <span>Total Assets</span>
+                </div>
+                <div class="card-value" id="totalAssets">₹0</div>
+            </div>
+
+            <div class="card card-liabilities">
+                <div class="card-header">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                        <polyline points="17 18 23 18 23 12"></polyline>
+                    </svg>
+                    <span>Total Liabilities</span>
+                </div>
+                <div class="card-value" id="totalLiabilities">₹0</div>
+            </div>
+
+            <div class="card card-networth" id="networthCard">
+                <div class="card-header">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    <span>Net Worth</span>
+                </div>
+                <div class="card-value" id="netWorth">₹0</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-excel" onclick="exportToExcel()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Export to Excel
+            </button>
+
+            <button class="btn btn-pdf" onclick="exportToPDF()">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <line x1="10" y1="9" x2="8" y2="9"></line>
+                </svg>
+                Export to PDF
+            </button>
+
+            <label class="btn btn-import">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Import from Excel
+                <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="importFromExcel(event)">
+            </label>
+        </div>
+
+        <!-- Assets Section -->
+        <div class="section">
+            <div class="category-info">
+                <strong>📚 Asset Categories Guide:</strong>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-item-title">💰 Cash & Bank</div>
+                        <div class="info-item-desc">Physical cash, savings accounts, current accounts</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">📈 Investments</div>
+                        <div class="info-item-desc">Stocks, mutual funds, fixed deposits, bonds</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">🏠 Real Estate</div>
+                        <div class="info-item-desc">Property, land, residential/commercial buildings</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">🪙 Precious Metals</div>
+                        <div class="info-item-desc">Gold (coins/jewelry/ETF), Silver (bars/coins/ETF)</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">₿ Cryptocurrency</div>
+                        <div class="info-item-desc">Bitcoin, Ethereum, and other digital assets</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">🏦 End Of Service Benefit</div>
+                        <div class="info-item-desc">Employee PF, Gratuity, EOSB, VPF, EPF</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">💼 PPF</div>
+                        <div class="info-item-desc">Public Provident Fund - long term savings</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">👥 Personal Debt (Receivable)</div>
+                        <div class="info-item-desc">Money lent to friends, family, or relatives - to receive back</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <h2>Assets</h2>
+                <button class="btn btn-add btn-add-asset" onclick="addAsset()">
+                    <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Asset
+                </button>
+            </div>
+            <div class="items-container" id="assetsContainer"></div>
+        </div>
+
+        <!-- Liabilities Section -->
+        <div class="section" style="padding-top: 0;">
+            <div class="category-info" style="background: #fef2f2; border-left-color: #ef4444;">
+                <strong style="color: #991b1b;">💳 Liability Categories Guide:</strong>
+                <div class="info-grid">
+                    <div class="info-item" style="border-color: #fecaca;">
+                        <div class="info-item-title" style="color: #dc2626;">🏠 Secured Loans</div>
+                        <div class="info-item-desc">Home loans, car loans, gold loans (with collateral)</div>
+                    </div>
+                    <div class="info-item" style="border-color: #fecaca;">
+                        <div class="info-item-title" style="color: #dc2626;">💰 Unsecured Loans</div>
+                        <div class="info-item-desc">Personal loans, education loans (without collateral)</div>
+                    </div>
+                    <div class="info-item" style="border-color: #fecaca;">
+                        <div class="info-item-title" style="color: #dc2626;">💳 Revolving Credit</div>
+                        <div class="info-item-desc">Credit card outstanding, overdraft facility</div>
+                    </div>
+                    <div class="info-item" style="border-color: #fecaca;">
+                        <div class="info-item-title" style="color: #dc2626;">👥 Personal Debt (Payable)</div>
+                        <div class="info-item-desc">Money owed to friends, family, or relatives - to repay</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <h2>Liabilities</h2>
+                <button class="btn btn-add btn-add-liability" onclick="addLiability()">
+                    <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Liability
+                </button>
+            </div>
+            <div class="items-container" id="liabilitiesContainer"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Developed and designed by Shamsudeen EP
+        </div>
+    </div>
+
+    <script>
+        const assetCategories = ['Cash', 'Bank Account', 'Fixed Deposit', 'Stocks', 'Mutual Funds', 'Real Estate', 'Gold', 'Silver', 'Cryptocurrency', 'End Of Service Benefit', 'PPF', 'ULIP', 'Endowment Plan', 'Life Insurance', 'Personal Debt', 'Other'];
+        const liabilityCategories = ['Home Loan', 'Personal Loan', 'Car Loan', 'Credit Card', 'Education Loan', 'Personal Debt', 'Other'];
+
+        // Asset category descriptions and examples
+        const assetDescriptions = {
+            'Cash': ['Cash in Hand', 'Emergency Fund', 'Petty Cash'],
+            'Bank Account': ['HDFC Savings Account', 'SBI Current Account', 'ICICI Salary Account', 'Axis Bank Account'],
+            'Fixed Deposit': ['SBI FD - 7.5% p.a.', 'HDFC FD - 1 Year', 'Post Office FD', 'Company FD'],
+            'Stocks': ['TCS Shares', 'Reliance Industries', 'Infosys Stock', 'HDFC Bank Equity'],
+            'Mutual Funds': ['SBI Bluechip Fund', 'HDFC Top 100', 'Axis Long Term Equity', 'ICICI Prudential Fund'],
+            'Real Estate': ['Residential Property - Kochi', 'Commercial Shop', 'Agricultural Land', 'Apartment - Mumbai'],
+            'Gold': ['Gold Coins - 10g', 'Gold Jewellery', 'Gold ETF', 'Sovereign Gold Bonds'],
+            'Silver': ['Silver Coins - 100g', 'Silver Bars', 'Silver Jewellery', 'Silver ETF'],
+            'Cryptocurrency': ['Bitcoin (BTC)', 'Ethereum (ETH)', 'Ripple (XRP)', 'Cardano (ADA)', 'Solana (SOL)'],
+            'End Of Service Benefit': ['Employee PF (Provident Fund)', 'Gratuity Amount', 'End Of Service Benefit (EOSB)', 'VPF (Voluntary PF)', 'EPF Account', 'Company Gratuity'],
+            'PPF': ['PPF Account - SBI', 'PPF - Post Office', 'Public Provident Fund'],
+            'ULIP': ['HDFC Life ULIP - Current Value', 'LIC ULIP Policy', 'ICICI Pru ULIP - Market Value', 'Max Life ULIP', 'SBI Life ULIP'],
+            'Endowment Plan': ['LIC Endowment Policy - Maturity Value', 'HDFC Life Endowment', 'SBI Life Endowment Plan', 'Bajaj Allianz Endowment'],
+            'Life Insurance': ['Term Life Insurance - Cash Value', 'LIC Jeevan Anand', 'Whole Life Policy Value', 'HDFC Life Insurance'],
+            'Personal Debt': ['Money Lent to Friend', 'Loan Given to Relative', 'Personal Lending', 'Money to Receive Back'],
+            'Other': ['Insurance Cash Value', 'Art Collection', 'Antiques', 'Bonds']
+        };
+
+        // Liability category descriptions and examples
+        const liabilityDescriptions = {
+            'Home Loan': ['Home Loan - HDFC @ 8.5%', 'Housing Loan - SBI', 'Mortgage - ICICI'],
+            'Personal Loan': ['Personal Loan - Bajaj Finserv', 'Quick Loan - HDFC', 'Consumer Loan'],
+            'Car Loan': ['Car Loan - Honda City', 'Vehicle Loan - Maruti', 'Auto Loan - HDFC'],
+            'Credit Card': ['HDFC Credit Card Outstanding', 'SBI Card Dues', 'ICICI Credit Card'],
+            'Education Loan': ['Education Loan - B.Tech', 'Study Loan - MBA', 'Student Loan'],
+            'Personal Debt': ['Debt to Repay - Friend', 'Family Loan to Repay', 'Personal Borrowing', 'Money Owed to Relative'],
+            'Other': ['Gold Loan', 'Business Loan', 'Overdraft Facility']
+        };
+
+        let assets = [
+            { id: 1, category: 'Cash', description: 'Emergency Fund - Cash in Hand', amount: 50000 },
+            { id: 2, category: 'Bank Account', description: 'HDFC Savings Account', amount: 250000 },
+            { id: 3, category: 'Fixed Deposit', description: 'SBI FD - 7.5% p.a. - 3 Years', amount: 500000 },
+            { id: 4, category: 'Stocks', description: 'TCS Shares - 50 units', amount: 175000 },
+            { id: 5, category: 'Mutual Funds', description: 'SBI Bluechip Fund - Monthly SIP', amount: 300000 },
+            { id: 6, category: 'Gold', description: 'Gold Jewellery - 25 grams', amount: 175000 },
+            { id: 7, category: 'Silver', description: 'Silver Coins - 200 grams', amount: 15000 },
+            { id: 8, category: 'Cryptocurrency', description: 'Bitcoin (BTC) - 0.05 BTC', amount: 280000 },
+            { id: 9, category: 'End Of Service Benefit', description: 'Employee PF + Gratuity + EOSB', amount: 850000 },
+            { id: 10, category: 'Personal Debt', description: 'Money Lent to Friend - To Receive', amount: 100000 },
+            { id: 11, category: 'Real Estate', description: 'Residential Apartment - Payyanur', amount: 4500000 }
+        ];
+        let liabilities = [
+            { id: 1, category: 'Home Loan', description: 'Home Loan - SBI @ 8.5% - 15 Years Remaining', amount: 2500000 },
+            { id: 2, category: 'Car Loan', description: 'Car Loan - Honda City @ 9.5% - 3 Years Remaining', amount: 350000 },
+            { id: 3, category: 'Credit Card', description: 'HDFC Credit Card Outstanding', amount: 45000 },
+            { id: 4, category: 'Personal Debt', description: 'Debt to Repay - Family Member', amount: 75000 }
+        ];
+        let nextAssetId = 12;
+        let nextLiabilityId = 5;
+
+        function formatINR(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function calculateTotals() {
+            const totalAssets = assets.reduce((sum, asset) => sum + (parseFloat(asset.amount) || 0), 0);
+            const totalLiabilities = liabilities.reduce((sum, liability) => sum + (parseFloat(liability.amount) || 0), 0);
+            const netWorth = totalAssets - totalLiabilities;
+
+            document.getElementById('totalAssets').textContent = formatINR(totalAssets);
+            document.getElementById('totalLiabilities').textContent = formatINR(totalLiabilities);
+            document.getElementById('netWorth').textContent = formatINR(netWorth);
+
+            const networthCard = document.getElementById('networthCard');
+            if (netWorth < 0) {
+                networthCard.classList.add('negative');
+            } else {
+                networthCard.classList.remove('negative');
+            }
+
+            return { totalAssets, totalLiabilities, netWorth };
+        }
+
+        function renderAssets() {
+            const container = document.getElementById('assetsContainer');
+            container.innerHTML = '';
+
+            assets.forEach(asset => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `
+                    <select onchange="updateAsset(${asset.id}, 'category', this.value); updateAssetDescriptionPlaceholder(${asset.id}, this.value)" value="${asset.category}">
+                        ${assetCategories.map(cat => 
+                            `<option value="${cat}" ${cat === asset.category ? 'selected' : ''}>${cat}</option>`
+                        ).join('')}
+                    </select>
+                    <input type="text" 
+                           id="asset-desc-${asset.id}"
+                           placeholder="${getPlaceholder(asset.category, 'asset')}" 
+                           value="${asset.description}" 
+                           oninput="updateAsset(${asset.id}, 'description', this.value)"
+                           list="asset-suggestions-${asset.id}">
+                    <datalist id="asset-suggestions-${asset.id}">
+                        ${(assetDescriptions[asset.category] || []).map(desc => 
+                            `<option value="${desc}">`
+                        ).join('')}
+                    </datalist>
+                    <input type="number" placeholder="Amount in ₹" value="${asset.amount}" 
+                           oninput="updateAsset(${asset.id}, 'amount', parseFloat(this.value) || 0)">
+                    <button class="btn-delete" onclick="deleteAsset(${asset.id})" title="Delete Asset">
+                        <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderLiabilities() {
+            const container = document.getElementById('liabilitiesContainer');
+            container.innerHTML = '';
+
+            liabilities.forEach(liability => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `
+                    <select onchange="updateLiability(${liability.id}, 'category', this.value); updateLiabilityDescriptionPlaceholder(${liability.id}, this.value)" value="${liability.category}">
+                        ${liabilityCategories.map(cat => 
+                            `<option value="${cat}" ${cat === liability.category ? 'selected' : ''}>${cat}</option>`
+                        ).join('')}
+                    </select>
+                    <input type="text" 
+                           id="liability-desc-${liability.id}"
+                           placeholder="${getPlaceholder(liability.category, 'liability')}" 
+                           value="${liability.description}" 
+                           oninput="updateLiability(${liability.id}, 'description', this.value)"
+                           list="liability-suggestions-${liability.id}">
+                    <datalist id="liability-suggestions-${liability.id}">
+                        ${(liabilityDescriptions[liability.category] || []).map(desc => 
+                            `<option value="${desc}">`
+                        ).join('')}
+                    </datalist>
+                    <input type="number" placeholder="Amount in ₹" value="${liability.amount}" 
+                           oninput="updateLiability(${liability.id}, 'amount', parseFloat(this.value) || 0)">
+                    <button class="btn-delete" onclick="deleteLiability(${liability.id})" title="Delete Liability">
+                        <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function getPlaceholder(category, type) {
+            const descriptions = type === 'asset' ? assetDescriptions : liabilityDescriptions;
+            const examples = descriptions[category];
+            return examples && examples.length > 0 ? examples[0] : 'Enter description...';
+        }
+
+        function updateAssetDescriptionPlaceholder(id, category) {
+            const input = document.getElementById(`asset-desc-${id}`);
+            if (input) {
+                input.placeholder = getPlaceholder(category, 'asset');
+            }
+        }
+
+        function updateLiabilityDescriptionPlaceholder(id, category) {
+            const input = document.getElementById(`liability-desc-${id}`);
+            if (input) {
+                input.placeholder = getPlaceholder(category, 'liability');
+            }
+        }
+
+        function addAsset() {
+            assets.push({ id: nextAssetId, category: 'Cash', description: '', amount: 0 });
+            nextAssetId++;
+            renderAssets();
+            calculateTotals();
+        }
+
+        function addLiability() {
+            liabilities.push({ id: nextLiabilityId, category: 'Home Loan', description: '', amount: 0 });
+            nextLiabilityId++;
+            renderLiabilities();
+            calculateTotals();
+        }
+
+        function deleteAsset(id) {
+            assets = assets.filter(asset => asset.id !== id);
+            renderAssets();
+            calculateTotals();
+        }
+
+        function deleteLiability(id) {
+            liabilities = liabilities.filter(liability => liability.id !== id);
+            renderLiabilities();
+            calculateTotals();
+        }
+
+        function updateAsset(id, field, value) {
+            const asset = assets.find(a => a.id === id);
+            if (asset) {
+                asset[field] = value;
+                calculateTotals();
+            }
+        }
+
+        function updateLiability(id, field, value) {
+            const liability = liabilities.find(l => l.id === id);
+            if (liability) {
+                liability[field] = value;
+                calculateTotals();
+            }
+        }
+
+        function exportToExcel() {
+            const { totalAssets, totalLiabilities, netWorth } = calculateTotals();
+
+            const assetData = [
+                ['ASSETS'],
+                ['Category', 'Description', 'Amount (₹)'],
+                ...assets.map(a => [a.category, a.description, a.amount]),
+                [],
+                ['Total Assets', '', totalAssets]
+            ];
+
+            const liabilityData = [
+                ['LIABILITIES'],
+                ['Category', 'Description', 'Amount (₹)'],
+                ...liabilities.map(l => [l.category, l.description, l.amount]),
+                [],
+                ['Total Liabilities', '', totalLiabilities]
+            ];
+
+            const summaryData = [
+                ['NET WORTH SUMMARY'],
+                ['Total Assets', totalAssets],
+                ['Total Liabilities', totalLiabilities],
+                ['Net Worth', netWorth]
+            ];
+
+            const wb = XLSX.utils.book_new();
+            const ws1 = XLSX.utils.aoa_to_sheet(assetData);
+            const ws2 = XLSX.utils.aoa_to_sheet(liabilityData);
+            const ws3 = XLSX.utils.aoa_to_sheet(summaryData);
+
+            XLSX.utils.book_append_sheet(wb, ws1, 'Assets');
+            XLSX.utils.book_append_sheet(wb, ws2, 'Liabilities');
+            XLSX.utils.book_append_sheet(wb, ws3, 'Summary');
+
+            XLSX.writeFile(wb, `NetWorth_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function exportToPDF() {
+            const { totalAssets, totalLiabilities, netWorth } = calculateTotals();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Net Worth Statement', 105, 20, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, 105, 28, { align: 'center' });
+
+            doc.autoTable({
+                startY: 40,
+                head: [['Category', 'Description', 'Amount (₹)']],
+                body: assets.map(a => [a.category, a.description, a.amount.toLocaleString('en-IN')]),
+                headStyles: { fillColor: [34, 139, 34], fontStyle: 'bold' },
+                foot: [['Total Assets', '', totalAssets.toLocaleString('en-IN')]],
+                footStyles: { fillColor: [200, 255, 200], fontStyle: 'bold' },
+                theme: 'striped',
+                margin: { left: 14, right: 14 }
+            });
+
+            const finalY = doc.lastAutoTable.finalY + 10;
+
+            doc.autoTable({
+                startY: finalY,
+                head: [['Category', 'Description', 'Amount (₹)']],
+                body: liabilities.map(l => [l.category, l.description, l.amount.toLocaleString('en-IN')]),
+                headStyles: { fillColor: [220, 20, 60], fontStyle: 'bold' },
+                foot: [['Total Liabilities', '', totalLiabilities.toLocaleString('en-IN')]],
+                footStyles: { fillColor: [255, 200, 200], fontStyle: 'bold' },
+                theme: 'striped',
+                margin: { left: 14, right: 14 }
+            });
+
+            const summaryY = doc.lastAutoTable.finalY + 15;
+
+            doc.setFillColor(240, 240, 240);
+            doc.rect(14, summaryY, 182, 35, 'F');
+
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('NET WORTH SUMMARY', 105, summaryY + 10, { align: 'center' });
+
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Total Assets: ₹${totalAssets.toLocaleString('en-IN')}`, 25, summaryY + 18);
+            doc.text(`Total Liabilities: ₹${totalLiabilities.toLocaleString('en-IN')}`, 25, summaryY + 24);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            const worthColor = netWorth >= 0 ? [34, 139, 34] : [220, 20, 60];
+            doc.setTextColor(...worthColor);
+            doc.text(`Net Worth: ₹${netWorth.toLocaleString('en-IN')}`, 25, summaryY + 31);
+            doc.setTextColor(0, 0, 0);
+
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'italic');
+            doc.text('Developed and designed by Shamsudeen EP', 105, 285, { align: 'center' });
+
+            doc.save(`NetWorth_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        function importFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(data, { type: 'array' });
+
+                    const assetSheet = wb.Sheets['Assets'];
+                    if (assetSheet) {
+                        const assetData = XLSX.utils.sheet_to_json(assetSheet, { header: 1 });
+                        const newAssets = [];
+                        let id = 1;
+
+                        for (let i = 2; i < assetData.length; i++) {
+                            const row = assetData[i];
+                            if (row[0] && row[0] !== 'Total Assets') {
+                                newAssets.push({
+                                    id: id++,
+                                    category: row[0] || 'Cash',
+                                    description: row[1] || '',
+                                    amount: parseFloat(row[2]) || 0
+                                });
+                            }
+                        }
+
+                        if (newAssets.length > 0) {
+                            assets = newAssets;
+                            nextAssetId = id;
+                        }
+                    }
+
+                    const liabilitySheet = wb.Sheets['Liabilities'];
+                    if (liabilitySheet) {
+                        const liabilityData = XLSX.utils.sheet_to_json(liabilitySheet, { header: 1 });
+                        const newLiabilities = [];
+                        let id = 1;
+
+                        for (let i = 2; i < liabilityData.length; i++) {
+                            const row = liabilityData[i];
+                            if (row[0] && row[0] !== 'Total Liabilities') {
+                                newLiabilities.push({
+                                    id: id++,
+                                    category: row[0] || 'Home Loan',
+                                    description: row[1] || '',
+                                    amount: parseFloat(row[2]) || 0
+                                });
+                            }
+                        }
+
+                        if (newLiabilities.length > 0) {
+                            liabilities = newLiabilities;
+                            nextLiabilityId = id;
+                        }
+                    }
+
+                    renderAssets();
+                    renderLiabilities();
+                    calculateTotals();
+                    alert('Data imported successfully!');
+                } catch (error) {
+                    alert('Error importing file. Please ensure it\'s a valid Excel file.');
+                    console.error(error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = '';
+        }
+
+        // Initialize
+        renderAssets();
+        renderLiabilities();
+        calculateTotals();
+    </script>
+</body>
+</html>
